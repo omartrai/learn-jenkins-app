@@ -29,12 +29,6 @@ pipeline {
                 '''
             }
         }
-
-        stage('Archive Build Artifacts') {
-            steps {
-                archiveArtifacts artifacts: 'build/**', fingerprint: true
-            }
-        }
     }
 
     post {
