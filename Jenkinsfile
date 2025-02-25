@@ -1,21 +1,25 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:18-alpine'
-        }
+  agent {
+    docker {
+      image 'node:18-alpine'
+      args '-u root' // Run as root to avoid permission issues
     }
-    stages {
-        stage('Build') {
-            steps {
-                sh 'node --version'
-                sh 'npm --version'
-                
-                // First run npm install instead of npm ci
-                sh 'npm install'
-                
-                // Then build the application
-                sh 'npm run build'
-            }
-        }
+  }
+  stages {
+    stage('Clean Workspace') {
+      steps {
+        sh 'rm -rf node_modules package-lock.json'
+      }
     }
+    stage('Install Dependencies') {
+      steps {
+        sh 'npm ci'
+      }
+    }
+    stage('Build') {
+      steps {
+        sh 'npm run build'
+      }
+    }
+  }
 }
