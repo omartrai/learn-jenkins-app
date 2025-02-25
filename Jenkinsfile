@@ -5,36 +5,44 @@ pipeline {
         stage('Build') {
             agent {
                 docker {
-                    image 'node:18'
+                    image 'node:18-bullseye'  // Use Debian-based Node.js image
+                    args '--user root'        // Run container as root
                     reuseNode true
-                    args '--memory=2g --cpus=2'
                 }
             }
             steps {
                 sh '''
-                    echo "Checking Environment..."
+                    echo "Checking file structure..."
                     ls -la
+                    echo "Node.js Version:"
                     node --version
+                    echo "NPM Version:"
                     npm --version
-                    cat package.json
-
-                    echo "Cleaning Cache..."
-                    npm cache clean --force
-
                     echo "Installing Dependencies..."
-                    npm install
-
-                    echo "Checking Installed Packages..."
-                    ls -la node_modules/.bin
-                    npx react-scripts --version || echo "react-scripts not found!"
-
-                    echo "Building the Project..."
+                    npm ci || (npm install --package-lock-only && npm ci)
+                    echo "Verifying node_modules..."
+                    ls -la node_modules || echo "node_modules missing!"
+                    echo "Building Application..."
                     npm run build
-
-                    echo "Build Complete!"
+                    echo "Build Completed. Listing Files:"
                     ls -la
                 '''
             }
+        }
+
+        stage('Archive Build Artifacts') {
+            steps {
+                archiveArtifacts artifacts: 'build/**', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Build completed successfully!'
+        }
+        failure {
+            echo '❌ Build failed!'
         }
     }
 }
